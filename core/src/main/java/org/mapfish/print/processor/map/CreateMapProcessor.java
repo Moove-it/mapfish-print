@@ -321,8 +321,16 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
 
         //prepare layers for rendering
         for (final MapLayer layer : layers) {
-            layer.prepareRender(mapContext);
-            final MapfishMapContext transformer = getTransformer(mapContext,
+            MapfishMapContext layerMapContext = mapContext;
+
+            if (layer.getName().equals("labels")) {
+                MapAttributeValues layerValues = mapValues;
+                layerValues.dpi = 144.0;
+                layerMapContext = createMapContext(layerValues);
+            }
+
+            layer.prepareRender(layerMapContext);
+            final MapfishMapContext transformer = getTransformer(layerMapContext,
                     layer.getImageBufferScaling());
             layer.cacheResources(cache, clientHttpRequestFactory, transformer);
         }
@@ -335,14 +343,23 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
             checkCancelState(context);
             final File path;
             RenderType renderType = getSupportedRenderType(layer.getRenderType());
+
+            MapfishMapContext layerMapContext = mapContext;
+
+            if (layer.getName().equals("labels")) {
+                MapAttributeValues layerValues = mapValues;
+                layerValues.dpi = 144.0;
+                layerMapContext = createMapContext(layerValues);
+            }
+
             if (layer.getRenderType() == RenderType.SVG) {
                 // render layer as SVG
-                final SVGGraphics2D graphics2D = getSvgGraphics(mapContext.getMapSize());
+                final SVGGraphics2D graphics2D = getSvgGraphics(layerMapContext.getMapSize());
 
                 try {
                     Graphics2D clippedGraphics2D = createClippedGraphics(
-                            mapContext, areaOfInterest, graphics2D);
-                    layer.render(clippedGraphics2D, clientHttpRequestFactory, mapContext);
+                            layerMapContext, areaOfInterest, graphics2D);
+                    layer.render(clippedGraphics2D, clientHttpRequestFactory, layerMapContext);
 
                     path = new File(printDirectory, mapKey + "_layer_" + i + ".svg");
                     saveSvgFile(graphics2D, path);
@@ -356,12 +373,12 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
                 final BufferedImageType layerImageType =
                         renderType == RenderType.JPEG ? this.jpegImageType : this.imageType;
                 final BufferedImage bufferedImage = new BufferedImage(
-                        (int) Math.round(mapContext.getMapSize().width * imageBufferScaling),
-                        (int) Math.round(mapContext.getMapSize().height * imageBufferScaling),
+                        (int) Math.round(layerMapContext.getMapSize().width * imageBufferScaling),
+                        (int) Math.round(layerMapContext.getMapSize().height * imageBufferScaling),
                         layerImageType.value
                 );
                 Graphics2D graphics2D = createClippedGraphics(
-                        mapContext, areaOfInterest,
+                        layerMapContext, areaOfInterest,
                         bufferedImage.createGraphics()
                 );
                 if (!layerImageType.transparency) {
@@ -373,7 +390,7 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
                 }
 
                 try {
-                    MapfishMapContext transformer = getTransformer(mapContext, layer.getImageBufferScaling());
+                    MapfishMapContext transformer = getTransformer(layerMapContext, layer.getImageBufferScaling());
                     layer.render(graphics2D, clientHttpRequestFactory, transformer);
 
                     // Merge consecutive layers of same render type and same buffer scaling (native
@@ -385,7 +402,7 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
                     ) {
                         layer = layers.get(++i);
                         checkCancelState(context);
-                        layer.prepareRender(mapContext);
+                        layer.prepareRender(layerMapContext);
                         warnIfDifferentRenderType(renderType, layer);
                         layer.render(graphics2D, clientHttpRequestFactory, transformer);
                     }
