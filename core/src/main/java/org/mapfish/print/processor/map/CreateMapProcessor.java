@@ -325,7 +325,7 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
 
             if (layer.getName().equals("labels")) {
                 MapAttributeValues layerValues = mapValues;
-                layerValues.dpi = 144.0;
+                layerValues.dpi = 205.0;
                 layerMapContext = createMapContext(layerValues);
             }
 
@@ -348,7 +348,7 @@ public final class CreateMapProcessor extends AbstractProcessor<CreateMapProcess
 
             if (layer.getName().equals("labels")) {
                 MapAttributeValues layerValues = mapValues;
-                layerValues.dpi = 144.0;
+                layerValues.dpi = 205.0;
                 layerMapContext = createMapContext(layerValues);
             }
 
